@@ -1,0 +1,36 @@
+version: "3.7"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: MySQL
+    restart: always
+    cap_add:
+      - SYS_NICE
+    environment:
+      - MYSQL_DATABASE=quotes
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=admin
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - 5012:3306
+
+  phpmyadmin:
+    image: phpmyadmin:5.2.0
+    container_name: PhpMyAdmin
+    restart: always
+    ports:
+      - 5013:80
+    environment:
+      - PMA_ARBITRARY=1
+
+volumes:
+  mysql-data:
+
+
+#http://localhost:5013/ -> PhpMyAdmin
+#    - Server=MySQL
+#    - MYSQL_USER=admin
+#    - MYSQL_PASSWORD=admin
