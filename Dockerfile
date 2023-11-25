@@ -10,4 +10,4 @@ RUN chmod -R 755 $HOME/app
 COPY ./requirements.txt ~/app/requirements.txt
 RUN pip install -r requirements.txt
 COPY . .
-CMD ["chainlit", "run", "app.py", "--port", "8081"]
+CMD ["chainlit", "run", "src/app.py", "--port", "8081"]

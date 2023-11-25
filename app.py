@@ -1,35 +1,28 @@
-from datetime import date
 from openai import AsyncOpenAI
 import chainlit as cl
 from chainlit.prompt import Prompt, PromptMessage
 from chainlit.playground.providers.openai import ChatOpenAI
+from decouple import config
+import mysql.connector
+from tabulate import tabulate
 
 # Set up BigQuery client
 # client = bigquery.Client(location="EU")
 
 openai_client = AsyncOpenAI()
-
-
-# def execute_query(query):
-#     # Execute the SQL query
-#     query_job = client.query(query)
-#
-#     # Wait for the query to complete
-#     query_job.result()
-#
-#     # Get the query results
-#     results = query_job.to_dataframe()
-#     markdown_table = results.to_markdown(index=False)
-#
-#     return markdown_table
-
-
 settings = {"model": "gpt-3.5-turbo", "temperature": 0, "stop": ["```"]}
 
-sql_query_prompt = """You have a BigQuery table named `order` in the dataset `demo`.
-The table contains information about orders, including `order_id`, `order_date`, `estimated_delivery_date`, and `status`.
-Write an SQL query to retrieve the full order based on the given question:
+sql_query_prompt = """You are tasked with generating MySQL queries for a furniture order reservation system database. Here is the database structure:
 
+-- Database Name: furniture_reservation_system
+
+-- Tables:
+1. customers (customer_id, first_name, last_name, email, phone_number)
+2. furniture (product_id, product_name, description, price)
+3. orders (order_id, customer_id, order_date, total_amount)
+4. order_items (item_id, order_id, product_id, quantity)
+
+Please provide just the query
 {input}
 ```"""
 
@@ -86,6 +79,48 @@ async def build_query(message: cl.Message):
     return msg.content
 
 
+def execute_query_and_add_to_markdown_table(query):
+    host = config('DATABASE_HOST')
+    user = config('DATABASE_USER')
+    password = config('DATABASE_PASSWORD')
+    database = config('DATABASE_NAME')
+
+    # Connect to the MySQL database
+    try:
+        connection = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database
+        )
+
+        cursor = connection.cursor()
+
+        # Execute the query
+        cursor.execute(query)
+
+        # Fetch the results
+        result = cursor.fetchall()
+
+        # Create a Markdown table from the query result
+        if result:
+            table = tabulate(result, headers=cursor.column_names, tablefmt="pipe")
+            return table
+        else:
+            return "No results found."
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+    finally:
+        # Close the cursor and connection
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+execute_query_and_add_to_markdown_table("SELECT * FROM orders")
+
 # async def run_and_analyze(parent_id: str, query: str):
 #     table = execute_query(query=query)
 #
@@ -139,9 +174,7 @@ async def take_action(action: cl.Action):
 @cl.on_message
 async def main(message: cl.Message):
     query = await build_query(message)
-    await print('Test finished')
     # await run_and_analyze(message.id, query)
-
 
 # @cl.oauth_callback
 # def auth_callback(provider_id: str, token: str, raw_user_data, default_app_user):
@@ -149,7 +182,6 @@ async def main(message: cl.Message):
 #         if "@chainlit.io" in raw_user_data["email"]:
 #             return default_app_user
 #     return None
-
 
 
 # chainlit run app.py -w --port 8081
