@@ -3,16 +3,13 @@ import chainlit as cl
 from chainlit.prompt import Prompt, PromptMessage
 from chainlit.playground.providers.openai import ChatOpenAI
 from decouple import config
-import mysql.connector
+import psycopg2
 from tabulate import tabulate
-
-# Set up BigQuery client
-# client = bigquery.Client(location="EU")
 
 openai_client = AsyncOpenAI()
 settings = {"model": "gpt-3.5-turbo", "temperature": 0, "stop": ["```"]}
 
-sql_query_prompt = """You are tasked with generating MySQL queries for a furniture order reservation system database. Here is the database structure:
+sql_query_prompt = """You are tasked with generating PostgreSQL queries for a furniture order reservation system database. Here is the database structure:
 
 -- Database Name: furniture_reservation_system
 
@@ -26,10 +23,10 @@ Please provide just the query
 {input}
 ```"""
 
-explain_query_result_prompt = """Today is {date}
-You received a query from a customer support operator regarding the orders table.
+explain_query_result_prompt = """You received a query from a customer support operator regarding the furniture_reservation_system.
 They executed a SQL query and provided the results in Markdown table format.
-Analyze the table and explain the problem to the operator.
+Analyze the table and answer the initial question {input_message} to the operator. 
+No need to explain the table structure.
 
 Markdown Table:
 
@@ -39,6 +36,8 @@ Markdown Table:
 
 Short and concise analysis:
 """
+
+input_message = ""
 
 
 async def build_query(message: cl.Message):
@@ -55,6 +54,10 @@ async def build_query(message: cl.Message):
         settings=settings,
         inputs={"input": message.content},
     )
+
+    # adding the input message to a variable that can be used later in the asnwer
+    global input_message
+    input_message = message.content
 
     # Prepare the message for streaming
     msg = cl.Message(content="", author="query", language="sql", parent_id=message.id)
@@ -75,19 +78,18 @@ async def build_query(message: cl.Message):
 
     # Send and close the message stream
     await msg.update()
-
     return msg.content
 
 
-def execute_query_and_add_to_markdown_table(query):
+def execute_query(query):
     host = config('DATABASE_HOST')
     user = config('DATABASE_USER')
     password = config('DATABASE_PASSWORD')
     database = config('DATABASE_NAME')
 
-    # Connect to the MySQL database
+    # Connect to the PostgreSQL database
     try:
-        connection = mysql.connector.connect(
+        connection = psycopg2.connect(
             host=host,
             user=user,
             password=password,
@@ -102,14 +104,17 @@ def execute_query_and_add_to_markdown_table(query):
         # Fetch the results
         result = cursor.fetchall()
 
+        # Fetch column names
+        column_names = [desc[0] for desc in cursor.description]
+
         # Create a Markdown table from the query result
         if result:
-            table = tabulate(result, headers=cursor.column_names, tablefmt="pipe")
+            table = tabulate(result, headers=column_names, tablefmt="pipe")
             return table
         else:
             return "No results found."
 
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"Error: {err}")
     finally:
         # Close the cursor and connection
@@ -119,62 +124,68 @@ def execute_query_and_add_to_markdown_table(query):
             connection.close()
 
 
-execute_query_and_add_to_markdown_table("SELECT * FROM orders")
+# # Example usage
+# query = "SELECT * FROM customers"  # Replace with your query
+# print(execute_query_and_add_to_markdown_table(query))
 
-# async def run_and_analyze(parent_id: str, query: str):
-#     table = execute_query(query=query)
-#
-#     await cl.Message(content=table, parent_id=parent_id, author="result").send()
-#
-#     # Create the prompt object
-#     today = str(date.today())
-#     prompt = Prompt(
-#         provider=ChatOpenAI.id,
-#         messages=[
-#             PromptMessage(
-#                 role="user",
-#                 template=explain_query_result_prompt,
-#                 formatted=explain_query_result_prompt.format(date=today, table=table),
-#             )
-#         ],
-#         settings=settings,
-#         inputs={"date": today, "table": table},
-#     )
-#
-#     # Prepare the message for streaming
-#     msg = cl.Message(
-#         content="",
-#     )
-#     await msg.send()
-#
-#     # Call OpenAI and stream the message
-#     stream = await openai_client.chat.completions.create(
-#         messages=[m.to_openai() for m in prompt.messages], stream=True, **settings
-#     )
-#     async for part in stream:
-#         token = part.choices[0].delta.content or ""
-#         if token:
-#             await msg.stream_token(token)
-#
-#     # Update the prompt object with the completion
-#     prompt.completion = msg.content
-#     msg.prompt = prompt
-#
-#     msg.actions = [cl.Action(name="take_action", value="action", label="Take action")]
-#
-#     # Send and close the message stream
-#     await msg.update()
+
+async def run_and_analyze(parent_id: str, query: str):
+    global input_message
+    table = execute_query(query=query)
+
+    await cl.Message(content=table, parent_id=parent_id, author="result").send()
+
+    # Create the prompt object
+    prompt = Prompt(
+        provider=ChatOpenAI.id,
+        messages=[
+            PromptMessage(
+                role="user",
+                template=explain_query_result_prompt,
+                formatted=explain_query_result_prompt.format(input_message=input_message, table=table),
+            )
+        ],
+        settings=settings,
+        inputs={"input_message": input_message, "table": table},
+    )
+
+    # Prepare the message for streaming
+    msg = cl.Message(
+        content="",
+    )
+    await msg.send()
+
+    # Call OpenAI and stream the message
+    stream = await openai_client.chat.completions.create(
+        messages=[m.to_openai() for m in prompt.messages], stream=True, **settings
+    )
+    async for part in stream:
+        token = part.choices[0].delta.content or ""
+        if token:
+            await msg.stream_token(token)
+
+    # Update the prompt object with the completion
+    prompt.completion = msg.content
+    msg.prompt = prompt
+
+    msg.actions = [cl.Action(name="take_action", value="action", label="Take action")]
+
+    # Send and close the message stream
+    input_message = ""
+    await msg.update()
 
 
 @cl.action_callback(name="take_action")
 async def take_action(action: cl.Action):
-    await cl.Message(content="Contacting shipping carrier...").send()
+    print("Sending message to support center...")
+    await cl.Message(content="Contacting support center...").send()
 
 
 @cl.on_message
 async def main(message: cl.Message):
     query = await build_query(message)
-    # await run_and_analyze(message.id, query)
+    await run_and_analyze(message.id, query)
+
 
 # @cl.oauth_callback
 # def auth_callback(provider_id: str, token: str, raw_user_data, default_app_user):
@@ -182,6 +193,5 @@ async def main(message: cl.Message):
 #         if "@chainlit.io" in raw_user_data["email"]:
 #             return default_app_user
 #     return None
-
 
 # chainlit run app.py -w --port 8081
