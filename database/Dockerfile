@@ -1,13 +1,13 @@
-FROM mysql:8.0
+FROM postgres:latest
 
-# Copy the custom my.cnf file into the MySQL container.
-COPY my.cnf /etc/mysql/conf.d/my.cnf
+# If you have a custom PostgreSQL configuration, you can uncomment the next line and adjust the file path accordingly.
+# COPY your_postgres_conf.conf /etc/postgresql/conf.d/your_postgres_conf.conf
 
-# Copy the initial.sql file into the docker-entrypoint-initdb.d directory.
+# Copy the initial SQL script to the container.
+# This script will be executed when the container starts for the first time.
 COPY initial.sql /docker-entrypoint-initdb.d/
 
-# Set environment variables for the MySQL container.
-ENV MYSQL_DATABASE=furniture_reservation_system
-ENV MYSQL_USER=admin
-ENV MYSQL_PASSWORD=admin
-ENV MYSQL_ROOT_PASSWORD=root
+# Set environment variables for the PostgreSQL container.
+ENV POSTGRES_DB=furniture_reservation_system
+ENV POSTGRES_USER=admin
+ENV POSTGRES_PASSWORD=secret

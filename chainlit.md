@@ -1,14 +1,26 @@
-# Welcome to Chainlit! 🚀🤖
+# Welcome to Virtu.query! 🚀
 
-Hi there, Developer! 👋 We're excited to have you on board. Chainlit is a powerful tool designed to help you prototype, debug and share applications built on top of LLMs.
+## Introduction
 
-## Useful Links 🔗
+Virtu.query is an innovative project by **Virtu.ai** that revolutionizes database interactions by allowing users to query databases using natural human language and provides human-readable answers. This simplifies the querying process and makes data more accessible.
 
-- **Documentation:** Get started with our comprehensive [Chainlit Documentation](https://docs.chainlit.io) 📚
-- **Discord Community:** Join our friendly [Chainlit Discord](https://discord.gg/k73SQ3FyUh) to ask questions, share your projects, and connect with other developers! 💬
+## Features
 
-We can't wait to see what you create with Chainlit! Happy coding! 💻😊
+- Natural Language Processing: Query databases using simple human language.
+- Human-Readable Responses: Receive answers in an easy-to-understand format.
+- Docker Support: Simplified setup and deployment using Docker.
+- PostgreSQL Integration: Ready-to-use with a PostgreSQL database for testing. (Easy to implement with other databases as well)
 
-## Welcome screen
+## How to use
 
-To modify the welcome screen, edit the `chainlit.md` file at the root of your project. If you do not want a welcome screen, just leave this file empty.
+Get started simply asking anything you want to know about the database. 
+For example, you can ask:
+ - "What is the name of the first customer?"
+ - "Which customers spent more money in furniture?"
+ - "How many customers are there in the database?"
+ - "What is the total sales of the store?"
+ - "What is the average sales of the store?"
+
+Possibilities are endless! Virtu.query will understand your question and provide you with a human-readable answer.
+  
+

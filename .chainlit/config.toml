@@ -19,39 +19,39 @@ cache = false
 prompt_playground = true
 
 # Authorize users to upload files with messages
-multi_modal = true
+multi_modal = false
 
 # Allows user to use speech to text
 [features.speech_to_text]
-    enabled = false
+    enabled = true
     # See all languages here https://github.com/JamesBrill/react-speech-recognition/blob/HEAD/docs/API.md#language-string
-    # language = "en-US"
+     language = "en-US"
 
 [UI]
 # Name of the app and chatbot.
-name = "Chatbot"
+name = "Virtu.query"
 
 # Show the readme while the conversation is empty.
 show_readme_as_default = true
 
 # Description of the app and chatbot. This is used for HTML tags.
-# description = ""
+description = "Virtu.query is an innovative project by Virtu.ai that revolutionizes database interactions by allowing users to query databases using natural human language and provides human-readable answers. This simplifies the querying process and makes data more accessible."
 
 # Large size content are by default collapsed for a cleaner ui
 default_collapse_content = true
 
 # The default value for the expand messages settings.
-default_expand_messages = false
+default_expand_messages = true
 
 # Hide the chain of thought details from the user in the UI.
 hide_cot = false
 
 # Link to your github repo. This will add a github button in the UI's header.
-# github = ""
+github = "https://github.com/rfonseca85/virtu_query"
 
 # Specify a CSS file that can be used to customize the user interface.
 # The CSS file can be served from the public directory or via an external link.
-# custom_css = "/public/test.css"
+custom_css = '/public/stylesheet.css'
 
 # Override default MUI light theme. (Check theme.ts)
 [UI.theme.light]
@@ -75,4 +75,4 @@ hide_cot = false
 
 
 [meta]
-generated_by = "0.7.604"
+generated_by = "Rafael Fonseca"

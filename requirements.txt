@@ -1,6 +1,6 @@
 chainlit
 openai
 langsmith
-mysql-connector-python
 tabulate
 python-decouple
+psycopg2-binary
